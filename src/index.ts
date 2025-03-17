@@ -1,14 +1,17 @@
+import type { IndexHtmlTransformHook } from "vite";
+import { generateImportsMap, generateImportsMapDev, generateLink } from "./transfer-html";
 
-type PluginOption = {
-  type: 'importmap' | 'script'
-}
-
-export default function plugin(options: PluginOption) {
+export default function vitePluginEsCdn(options: CdnOption) {
   return {
-    name: 'vite-plugin-cdn-import',
-    transformIndexHtml(html: any) {
-      console.log('test sth', html)
-      return html
-    }
-  }
+    name: "vite-plugin-cdn-import",
+    type: "build",
+    transformIndexHtml(html: IndexHtmlTransformHook) {
+      const links = options.cdn.map((item) =>
+        generateLink({ href: item.url, rel: "preload", as: "script" })
+      );
+      const importMap = generateImportsMap(options.cdn);
+      const test = generateImportsMapDev()
+      return [...links, importMap, test];
+    },
+  };
 }

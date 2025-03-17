@@ -20,6 +20,9 @@ importers:
       tslib:
         specifier: ^2.8.1
         version: 2.8.1
+      vite:
+        specifier: ^6.2.1
+        version: 6.2.2
 
   playground:
     dependencies:

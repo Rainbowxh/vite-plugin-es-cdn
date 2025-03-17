@@ -10,7 +10,16 @@ export default defineConfig({
   plugins: [
     vue(),
     vueDevTools(),
-    vitePluginCdnImport()
+    vitePluginCdnImport({
+      type: 'importmap',
+      cdn: [
+        {
+          name: 'vue',
+          type: 'esm',
+          url: 'https://unpkg.com/vue@3.2.31/dist/vue.esm-browser.js'
+        }
+      ]
+    })
   ],
   resolve: {
     alias: {
