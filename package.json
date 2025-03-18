@@ -10,7 +10,7 @@
   "scripts": {
     "build": "rollup --config ./rollup.config.js",
     "play": "pnpm --filter @vite-plugin-es-cdn/playground run build",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "pnpm run build && pnpm run play;"
   },
   "keywords": [],
   "author": "",

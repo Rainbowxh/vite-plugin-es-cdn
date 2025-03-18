@@ -1,11 +1,10 @@
 
 type CdnConfig = {
-  type: 'esm' | 'iife' | 'commonjs' | 'umd',
+  type: 'importmap' | 'esm' | 'iife',
   name: string,
   url: string,
 }
 
 type CdnOption = {
-  type: 'importmap' | 'default',
   cdn: CdnConfig[],
 }

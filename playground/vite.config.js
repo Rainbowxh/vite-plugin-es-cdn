@@ -11,7 +11,6 @@ export default defineConfig({
     vue(),
     vueDevTools(),
     vitePluginCdnImport({
-      type: 'importmap',
       cdn: [
         {
           name: 'vue',
@@ -21,6 +20,10 @@ export default defineConfig({
       ]
     })
   ],
+  build: {
+    rollupOptions: {
+    }
+  },
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url))

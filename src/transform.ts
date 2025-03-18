@@ -3,7 +3,7 @@ import { HtmlTagDescriptor } from "vite";
  * This file used to add scripts and links to html
  */
 
-export function generateImportsMap(
+export function transformImportsMap(
   config: { name: string; url: string }[]
 ): HtmlTagDescriptor | null {
   const importsContent = config.map(({ name, url }) => `"${name}": "${url}"`).join(",\n");
@@ -26,7 +26,7 @@ export function generateImportsMap(
   };
 }
 
-export function generateImportsMapDev(): HtmlTagDescriptor {
+export function transformImportsMapDev(): HtmlTagDescriptor {
   return {
     tag: "script",
     injectTo: 'head',
@@ -38,14 +38,15 @@ export function generateImportsMapDev(): HtmlTagDescriptor {
 }
 
 // 导出一个函数，用于生成link标签
-export function generateLink(attrs: {
+export function transformLink(attrs: {
   rel: 'preload' | 'prefetch' | 'dns-prefetch' | 'modulepreload' | 'prerender',
   as?: 'fetch' | 'font' | 'image' | 'script' | 'style' | 'video' | 'worker',
   href: string
-}): HtmlTagDescriptor {
+}, injectTo: 'head' = 'head'): HtmlTagDescriptor {
   // 返回一个对象，包含tag和attrs两个属性
   return {
     tag: 'link',
     attrs,
+    injectTo
   }
 }
