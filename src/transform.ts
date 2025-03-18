@@ -5,12 +5,12 @@ import { HtmlTagDescriptor } from "vite";
 
 export function transformImportsMap(
   config: { name: string; url: string }[]
-): HtmlTagDescriptor | null {
+): HtmlTagDescriptor[] {
   const importsContent = config.map(({ name, url }) => `"${name}": "${url}"`).join(",\n");
 
-  if(!importsContent) return null;
+  if(!importsContent) return [];
 
-  return {
+  return [{
     tag: "script",
     injectTo: 'head',
     attrs: {
@@ -23,7 +23,7 @@ export function transformImportsMap(
       }
     }
     `,
-  };
+  }];
 }
 
 export function transformImportsMapDev(): HtmlTagDescriptor {
@@ -41,6 +41,7 @@ export function transformImportsMapDev(): HtmlTagDescriptor {
 export function transformLink(attrs: {
   rel: 'preload' | 'prefetch' | 'dns-prefetch' | 'modulepreload' | 'prerender',
   as?: 'fetch' | 'font' | 'image' | 'script' | 'style' | 'video' | 'worker',
+  type?: "module" | string,
   href: string
 }, injectTo: 'head' = 'head'): HtmlTagDescriptor {
   // 返回一个对象，包含tag和attrs两个属性

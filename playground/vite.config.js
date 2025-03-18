@@ -14,8 +14,8 @@ export default defineConfig({
       cdn: [
         {
           name: 'vue',
-          type: 'esm',
-          url: 'https://unpkg.com/vue@3.2.31/dist/vue.esm-browser.js'
+          type: 'iife',
+          url: 'https://cdn.jsdelivr.net/npm/vue@3.5.13/dist/vue.global.min.js'
         }
       ]
     })

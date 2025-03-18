@@ -1,118 +1,217 @@
-import { HtmlTagDescriptor, IndexHtmlTransformHook } from "vite";
-import { transformImportsMap } from "./transform";
-import { generatePatterns, Pattern } from "./match";
+import { HtmlTagDescriptor } from "vite";
+import { createPattern, Pattern } from "./match";
+import { transformImportsMap, transformLink } from "./transform";
+import * as vm from "node:vm"
+ 
+export type ProcessorPattern = {
+  type: 'exact' | 'prefix';
+  processor: Processor;
+  config: CdnConfig;
+  match: (source: string) => (string | undefined);
+};
 
-interface BaseProcessor {
-  handleResolveId: (config: CdnConfig, resolved: { id: string }) => any;
-
-  handleLoad?: (id: string) => string;
-
-  handleTransformIndexHtml?: (
-    html: string
-  ) => null | HtmlTagDescriptor | HtmlTagDescriptor[];
+export type ProcessorHandler = {
+  resolveId: (resolved: { id: string }, config: CdnConfig) => { id: string; external: boolean };
+  transformIndexHtml: (html: string) => HtmlTagDescriptor[]
+  load?: (id: string) => string | null;
 }
 
-abstract class Processor implements BaseProcessor {
-  abstract type: string;
+class Processor {
+  status: 'pending' | 'resolved'; 
 
-  abstract collections: Record<string, CdnConfig & { patterns: Pattern[] }>;
+  type: string;
+  
+  map: Map<string, CdnConfig>;
 
-  handleResolveId(config: CdnConfig, resolved: { id: string }) {
-    return null;
-  }
+  /**
+   * Each config will generate two patterns.
+   * One is exact match, the other is prefix match.
+   * Exact match will external package.
+   * Prefix match will mention user should clean it self
+   */
+  pattern: Map<string, ProcessorPattern[]>;
 
-  is(config: CdnConfig) {
-    return config.type === this.type;
-  }
+  /**
+   * Handler is a collection of hooks to be called in rollup.
+   * resolveId is used to judge whether the module is external.
+   * transform is used to deal with virtual module.
+   *  exp:
+   *    import { render } from "\0virtual:vue"
+   *    \0virtual:vue
+   *      export * from "https://_link_to_esm_vue"
+   * html is used to add element to html
+   *  exp:
+   *    <head>
+   *      <script type="importmap">{ "imports": { "circle": "https://example.com/shapes/circle.js" } } </script>
+   *      <link rel="preload" href="https://example.com/shapes/circle.js" as="script" type="module">
+   *    </head>
+   */
+  handler: ProcessorHandler;
 
-  match(source: string, importer: string) {
-    for (const [key, { patterns }] of Object.entries(this.collections)) {
-      for(const pattern of patterns) {
-        if (pattern.regexp.test(source)) {
-          return {
-            pattern,
-            config: this.collections[key],
-          };
-        }
+  constructor(options: {
+    type: string;
+    handler: {
+      resolveId?: (resolved: { id: string }, config: CdnConfig) => { id: string; external: boolean };
+      transformIndexHtml?: (html: string, configs: CdnConfig[]) => HtmlTagDescriptor[];
+      load?: (id: string, processor: Processor) => string | null;
+    };
+  }) {
+    this.status = 'pending'
+    this.type = options.type;
+    this.map = new Map();
+    this.pattern = new Map();
+    this.handler = {
+      resolveId: (resolved, config) => {
+        this.status = 'resolved'
+        return options.handler.resolveId?.(resolved, config) || { id: resolved.id, external: true };
+      },
+      transformIndexHtml: (html: string) => {
+        if(this.status === 'pending') return []
+        const configs = [...this.map.values()];
+        return options.handler.transformIndexHtml?.(html, configs) || [];
+      },
+      load: (id: string) => {
+        if(this.status === 'pending') return null
+        return options.handler.load?.(id, this) || null;
       }
     }
-
-    return null;
- }
-
-  register(config: CdnConfig) {
-    if(this.collections[config.name]) return;
-    const patten = generatePatterns(config);
-    this.collections[config.name] = {
-      ...config,
-      patterns: patten,
-    } ;
-  }
-}
-
-class ImportMapProcessor extends Processor implements BaseProcessor  {
-  type: "importmap";
-  collections: Record<string, CdnConfig & { patterns: Pattern[]; }> = {};
-
-  constructor() {
-    super();
-    this.type = "importmap";
   }
 
-  handleResolveId(config: CdnConfig, resolved: { id: string }) {
-    return null;
-  }
-}
-
-
-class EsmProcessor implements BaseProcessor {
-  type: "esm";
-  collections: Record<string, CdnConfig & { patterns?: Pattern[] }> = {};
-
-  constructor() {
-    this.type = "esm";
-  }
-
-  register(config: CdnConfig) {
-    if(this.collections[config.name]) return;
-    const patten = generatePatterns(config);
-    this.collections[config.name] = {
-      ...config,
-      patterns: patten,
-    } ;
-  }
-
+  // judge config can be used by Processors
   is(config: CdnConfig) {
-    return config.type === "esm";
+    return this.type === config.type;
   }
 
+  getAllPatterns() {
+    return [...this.pattern.entries()].reduce((acc, cur) => {
+      const [, value] = cur;
+      return acc.concat(value);
+    }, [] as any[]);
+  }
 
-  handleResolveId(config: CdnConfig, resolved: { id: string }) {
-    return {
-      id: config.url,
-      external: true,
-    };
+  private generatePattern(config: CdnConfig) {
+    let patterns = this.pattern.get(config.type);
+
+    if (!patterns) {
+      this.pattern.set(config.type, (patterns = []));
+    }
+
+    patterns.push({
+      type: "exact",
+      processor: this,
+      config,
+      match: createPattern("exact", config.name),
+    });
+
+    patterns.push({
+      type: "prefix",
+      processor: this,
+      config,
+      match: createPattern("prefix", config.name),
+    });
+  }
+
+  register(config: CdnConfig) {
+    if (!this.is(config)) return;
+    if (this.map.get(config.type)) return;
+    this.map.set(config.type, config);
+    this.generatePattern(config);
   }
 }
 
-export function getAllProcessors(
-  options: CdnOption
-): Record<string, BaseProcessor> {
-  const importMapProcessor = new ImportMapProcessor();
-  const esmProcessor = new EsmProcessor();
-  const processors: BaseProcessor[] = [importMapProcessor, esmProcessor];
-  const { cdn } = options;
-
-  cdn.forEach((config) => {
-    processors.forEach((processor) => {
-      if (processor.is(config)) {
-        processor.register(config);
+export function createProcessors(config: CdnConfig[]) {
+  return config.reduce((acc, cur) => {
+    const { type } = cur;
+    if (!acc[type]) {
+      if (type === "importmap") {
+        acc[type] = createImportmapProcessor();
       }
-    });
-  });
+      if (type === "esm") {
+        acc[type] = createEsmProcessor();
+      }
+      if (type === "iife") {
+        acc[type] = createIIfeProcessor();
+      }
+    }
+    acc[type].register(cur);
+    return acc;
+  }, {} as Record<string, Processor>);
+}
 
-  return {
-    importmap: importMapProcessor,
-    esm: esmProcessor,
-  };
+function createImportmapProcessor() {
+  return new Processor({
+    type: "importmap",
+    handler: {
+      resolveId: (resolved) => {
+        return { id: resolved.id, external: true };
+      },
+      transformIndexHtml(html, configs) {
+        return transformImportsMap(configs);
+      },
+    },
+  });
+}
+
+function createEsmProcessor() {
+  return new Processor({
+    type: "esm",
+    handler: {
+      resolveId: (resolved, config) => {
+        return { id: config.url, external: true };
+      },
+      transformIndexHtml(html: string, configs: CdnConfig[]) {
+        return configs.map(config => {
+          const link = transformLink({
+            rel: "preload",
+            as: "script",
+            type: "module",
+            href: config.url
+          })
+          return link
+        })
+      }
+    },
+  });
+}
+
+function createIIfeProcessor() {
+  return new Processor({
+    type: "iife",
+    handler: {
+      resolveId: (resolved, config) => {
+        return { id: `\0virtual-es-cdn:'${config.name}`, external: false };
+      },
+      load(id, processor) {
+        if(id.includes('\0virtual-es-cdn:')) {
+          const name = id.split(':')[1]
+          console.log(name)
+          const context = { window: {} };
+          const script = new vm.Script(`window.vue = { }`)
+
+          script.runInNewContext(context);
+
+          console.log(context)
+
+          return "export default { name: '123' }";
+        }
+        return null;
+      },
+      transformIndexHtml(html: string, configs: CdnConfig[]) {
+        let result: HtmlTagDescriptor[] = []
+
+        result = result.concat(
+          configs.map(config => {
+            return transformLink({
+              rel: "preload",
+              as: "script",
+              type: "text/javascript",
+              href: config.url
+            })
+          })
+        )
+
+        return result
+      }
+    },
+  });
 }
