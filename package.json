@@ -6,6 +6,9 @@
   "files": [
     "dist"
   ],
+  "homepage": "https://github.com/Rainbowxh/vite-plugin-es-cdn",
+  "author": "elicxh <elicxh@gmail.com>",
+  "keywords": ["vite", "plugin", "cdn"],
   "main": "./dist/index.js",
   "exports": {
     ".": "./dist/index.js"
@@ -15,8 +18,6 @@
     "play": "pnpm --filter @vite-plugin-es-cdn/playground run build",
     "test": "pnpm run build && pnpm run play"
   },
-  "keywords": [],
-  "author": "",
   "license": "ISC",
   "packageManager": "pnpm@10.4.1",
   "devDependencies": {
