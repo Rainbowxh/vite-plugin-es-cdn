@@ -3,10 +3,12 @@
   "version": "0.0.2",
   "description": "",
   "type": "module",
-  "main": "index.js",
+  "files": ["dist"],
+  "main": "./dist/index.js",
   "exports": {
     ".": "./dist/index.js"
   },
+
   "scripts": {
     "build": "rollup --config ./rollup.config.js",
     "play": "pnpm --filter @vite-plugin-es-cdn/playground run build",
