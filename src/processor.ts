@@ -142,9 +142,8 @@ function createImportmapProcessor() {
   return new Processor({
     type: "importmap",
     handler: {
-      resolveId: (resolved) => {
-
-        return { id: resolved.id, external: true };
+      resolveId: (resolved,config) => {
+        return { id: config.name, external: true };
       },
       transformIndexHtml(html, configs) {
         return transformImportsMap(configs);

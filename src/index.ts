@@ -34,7 +34,7 @@ export default function vitePluginEsCdn(options: CdnOption) {
                   return { ...res, external: true };
                 }else {
                   const res = processor.handler.resolveId?.(resolved, config)
-                  return { ...res, external: false };
+                  return { external: false, ...res };
                 }
               });
           }
