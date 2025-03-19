@@ -1,6 +1,6 @@
 import { HtmlTagDescriptor } from "vite";
 import { createPattern, Pattern } from "./match";
-import { transformImportsMap, transformLink } from "./transform";
+import { transformImportsMap, transformLink, transformScript } from "./transform";
 import * as vm from "node:vm"
  
 export type ProcessorPattern = {
@@ -11,9 +11,9 @@ export type ProcessorPattern = {
 };
 
 export type ProcessorHandler = {
-  resolveId: (resolved: { id: string }, config: CdnConfig) => { id: string; external: boolean };
+  resolveId: (resolved: { id: string }, config: CdnConfig) => { id: string; external?: boolean } | null | undefined;
   transformIndexHtml: (html: string) => HtmlTagDescriptor[]
-  load?: (id: string) => string | null;
+  load?: (id: string) => Promise<string | null> | string | null;
 }
 
 class Processor {
@@ -51,9 +51,9 @@ class Processor {
   constructor(options: {
     type: string;
     handler: {
-      resolveId?: (resolved: { id: string }, config: CdnConfig) => { id: string; external: boolean };
+      resolveId?: (resolved: { id: string }, config: CdnConfig) => { id: string; external?: boolean };
       transformIndexHtml?: (html: string, configs: CdnConfig[]) => HtmlTagDescriptor[];
-      load?: (id: string, processor: Processor) => string | null;
+      load?: (id: string, processor: Processor) =>  Promise<string | null> | string | null;
     };
   }) {
     this.status = 'pending'
@@ -114,7 +114,7 @@ class Processor {
   register(config: CdnConfig) {
     if (!this.is(config)) return;
     if (this.map.get(config.type)) return;
-    this.map.set(config.type, config);
+    this.map.set(config.name, config);
     this.generatePattern(config);
   }
 }
@@ -143,6 +143,7 @@ function createImportmapProcessor() {
     type: "importmap",
     handler: {
       resolveId: (resolved) => {
+
         return { id: resolved.id, external: true };
       },
       transformIndexHtml(html, configs) {
@@ -179,37 +180,39 @@ function createIIfeProcessor() {
     type: "iife",
     handler: {
       resolveId: (resolved, config) => {
-        return { id: `\0virtual-es-cdn:'${config.name}`, external: false };
+        if(!config.global) return { id: resolved.id };
+        return { id: `virtual-es-cdn:${config.name}`, external: false };
       },
-      load(id, processor) {
-        if(id.includes('\0virtual-es-cdn:')) {
+      async load(id, processor) {
+        if(id.includes(`virtual-es-cdn:`)) {
           const name = id.split(':')[1]
-          console.log(name)
-          const context = { window: {} };
-          const script = new vm.Script(`window.vue = { }`)
-
-          script.runInNewContext(context);
-
-          console.log(context)
-
-          return "export default { name: '123' }";
+          const context = {};
+          const config = processor.map.get(name);
+          if(!config) return null;
+          const resp = await fetch(config.url);
+          const text = await resp.text();
+          const script = new vm.Script(text);
+          script.runInNewContext(context)
+          const keys = Object.keys((context as any).Vue);
+          return `
+            export default window.${config.global};
+            export const {  
+              ${keys.join(',')}
+            } = window.${config.global};
+          `
         }
         return null;
       },
       transformIndexHtml(html: string, configs: CdnConfig[]) {
         let result: HtmlTagDescriptor[] = []
-
         result = result.concat(
           configs.map(config => {
-            return transformLink({
-              rel: "preload",
-              as: "script",
-              type: "text/javascript",
-              href: config.url
+            return transformScript({
+              src: config.url,
+              type: "text/javascript"
             })
           })
         )
-
         return result
       }
     },

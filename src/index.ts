@@ -1,7 +1,6 @@
 import { type HtmlTagDescriptor } from "vite";
 import { createProcessors, ProcessorPattern } from "./processor";
 
-
 export default function vitePluginEsCdn(options: CdnOption) {
   const processors = createProcessors(options.cdn);
   const patterns = Object.values(processors).reduce(
@@ -16,7 +15,6 @@ export default function vitePluginEsCdn(options: CdnOption) {
       resolveId(source: string, importer: string) {
         for (let pattern of patterns) {
           const { type, config, match, processor } = pattern;
-
           if (!match(source)) continue;
 
           if (type === "prefix") {
@@ -30,8 +28,14 @@ export default function vitePluginEsCdn(options: CdnOption) {
             return (this as any)
               .resolve(source, importer, { skipSelf: true, ...options })
               .then((resolved: { id: string } | null) => {
-                if (!resolved) return null;
-                return processor.handler.resolveId?.(resolved, config);
+                // deal component do not installed situtation 
+                if(!resolved) {
+                  const res = processor.handler.resolveId?.(resolved || { id: source }, config)
+                  return { ...res, external: true };
+                }else {
+                  const res = processor.handler.resolveId?.(resolved, config)
+                  return { ...res, external: false };
+                }
               });
           }
 
@@ -40,13 +44,17 @@ export default function vitePluginEsCdn(options: CdnOption) {
 
         return null;
       },
-      load(id: string) {
-        let result = null;
-        for(let key of Object.keys(processors)) {
-          const processor = processors[key];
-          result = processor.handler.load?.(result || id);
+      async load(id: string) {
+        if (id.includes("virtual-es-cdn:")) {
+          for (let key of Object.keys(processors)) {
+            const processor = processors[key];
+            let result = await processor.handler.load?.(id);
+            if (result) {
+              return result;
+            }
+          }
         }
-        return result;
+        return null;
       },
     },
     {

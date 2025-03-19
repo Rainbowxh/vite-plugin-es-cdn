@@ -15,7 +15,13 @@ export default defineConfig({
         {
           name: 'vue',
           type: 'iife',
-          url: 'https://cdn.jsdelivr.net/npm/vue@3.5.13/dist/vue.global.min.js'
+          global: 'Vue',
+          url: 'https://cdn.bootcdn.net/ajax/libs/vue/3.5.13/vue.global.min.js'
+        },
+        {
+          name: 'element-plus',
+          type: 'importmap',
+          url: 'https://cdn.jsdelivr.net/npm/element-plus@2.9.6/+esm'
         }
       ]
     })

@@ -51,3 +51,14 @@ export function transformLink(attrs: {
     injectTo
   }
 }
+
+export function transformScript(attrs: {
+  src: string,
+  type?: 'module' | string;
+}) :HtmlTagDescriptor {
+  return {
+    tag: 'script',
+    attrs,
+    injectTo: 'head'
+  }
+}
