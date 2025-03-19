@@ -62,7 +62,7 @@ export default defineConfig({
 });
 ```
 
-### Usage of **esm**.
+### Usage of **iife**.
 
 ```ts
 // vite.config.ts
