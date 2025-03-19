@@ -34,7 +34,7 @@ export default defineConfig({
         {
           name: "vue",
           type: "importmap",
-          url: "https://cdn.jsdelivr.net/npm/vue@3.5.13/dist/vue.global.min.js",
+          url: "https://cdn.jsdelivr.net/npm/vue@3.5.13/+esm",
         },
       ],
     }),
