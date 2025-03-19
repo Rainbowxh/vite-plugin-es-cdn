@@ -13,6 +13,7 @@ pnpm i vite-plugin-es-cdn -D
 ## Usage
 
 Plugin supports three types of cdn script:
+
 - importmap
 - esm
 - iife
@@ -29,9 +30,13 @@ import esCdn from "vite-plugin-es-cdn";
 export default defineConfig({
   plugins: [
     esCdn({
-      name: "vue",
-      type: "importmap",
-      url: "https://cdn.jsdelivr.net/npm/vue@3.5.13/dist/vue.global.min.js",
+      cdn: [
+        {
+          name: "vue",
+          type: "importmap",
+          url: "https://cdn.jsdelivr.net/npm/vue@3.5.13/dist/vue.global.min.js",
+        },
+      ],
     }),
   ],
 });
@@ -47,9 +52,11 @@ import esCdn from "vite-plugin-es-cdn";
 export default defineConfig({
   plugins: [
     esCdn({
-      name: "vue",
-      type: "esm",
-      url: "https://cdn.jsdelivr.net/npm/vue@3.5.13/+esm",
+      cdn: {
+        name: "vue",
+        type: "esm",
+        url: "https://cdn.jsdelivr.net/npm/vue@3.5.13/+esm",
+      },
     }),
   ],
 });
@@ -65,10 +72,12 @@ import esCdn from "vite-plugin-es-cdn";
 export default defineConfig({
   plugins: [
     esCdn({
+      cdn: [
       name: "vue",
       type: "iife",
       global: "Vue",
       url: "https://cdn.bootcdn.net/ajax/libs/vue/3.5.13/vue.global.min.js",
+      ]
     }),
   ],
 });
@@ -77,9 +86,10 @@ export default defineConfig({
 ## Playground
 
 You can see example in playground.
+
 ```
 pnpm run test
 
 cd playground
-pnpm run preview 
+pnpm run preview
 ```

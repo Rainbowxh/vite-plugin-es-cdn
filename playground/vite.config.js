@@ -14,8 +14,9 @@ export default defineConfig({
       cdn: [
         {
           name: "vue",
-          type: "importmap",
-          url: "https://cdn.jsdelivr.net/npm/vue@3.5.13/+esm",
+          type: "iife",
+          global: "Vue",
+          url: "https://cdn.bootcdn.net/ajax/libs/vue/3.5.13/vue.global.min.js",
         }
       ]
     })
