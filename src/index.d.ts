@@ -7,5 +7,6 @@ type CdnConfig = {
 }
 
 type CdnOption = {
+  mode: "dev" | "build",
   cdn: CdnConfig[],
 }

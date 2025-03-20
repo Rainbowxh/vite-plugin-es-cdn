@@ -30,10 +30,10 @@ export default function vitePluginEsCdn(options: CdnOption) {
               .then((resolved: { id: string } | null) => {
                 // deal component do not installed situtation 
                 if(!resolved) {
-                  const res = processor.handler.resolveId?.(resolved || { id: source }, config)
+                  const res = processor.handler.resolveId?.(resolved || { id: source }, config, options)
                   return { ...res, external: true };
                 }else {
-                  const res = processor.handler.resolveId?.(resolved, config)
+                  const res = processor.handler.resolveId?.(resolved, config, options)
                   return { external: false, ...res };
                 }
               });
@@ -64,7 +64,7 @@ export default function vitePluginEsCdn(options: CdnOption) {
         let result: HtmlTagDescriptor[] = [];
         for (let key of Object.keys(processors)) {
           const processor = processors[key];
-          result = result.concat(processor.handler.transformIndexHtml(html));
+          result = result.concat(processor.handler.transformIndexHtml(html, options));
         }
         return result;
       },
