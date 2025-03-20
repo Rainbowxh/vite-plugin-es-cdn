@@ -4,30 +4,41 @@
   A Vite plugin for automatically importing packages from CDN in esm projects.
 </p>
 
-## Install
+## Installation
 
 ```sh
 pnpm i vite-plugin-es-cdn -D
 ```
 
+## Configuration Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `mode` | `'dev'` \| `'string'` | Specifies whether it is a build or development environment. |
+| `cdn` | `cdnConfig[]` | Collection of CDN configurations. |
+| ├ `name` | `string` | CDN package name. |
+| ├ `type` | `'importmap'` \| `'esm'` \| `'iife'` | Type of CDN integration. |
+| ├ `url` | `string` | CDN resource URL. |
+| ├ `global` | `string` | Only applicable for `'iife'` type to define the global namespace. |
+
 ## Usage
 
-Plugin supports three types of cdn script:
+This plugin supports three types of CDN script imports:
 
-- importmap
-- esm
-- iife
+- **Importmap**
+- **ESM**
+- **IIFE**
 
-! Notice that please do not config rollup `external` option what you want. Because in some cases, vite will not be able to get the external dependencies when external is configured.
+⚠ **Notice**: Do not manually configure the Rollup `external` option. In some cases, Vite may fail to resolve external dependencies correctly when this is set.
 
-### Usage of **importmap**.
+### Importmap Example
 
 ```ts
 // vite.config.ts
 import { defineConfig } from "vite";
 import esCdn from "vite-plugin-es-cdn";
 
-// for vue
+// For Vue
 export default defineConfig({
   plugins: [
     esCdn({
@@ -42,7 +53,7 @@ export default defineConfig({
   ],
 });
 
-// for react. https://react.dev/learn/build-a-react-app-from-scratch#vite
+// For React
 export default defineConfig({
   plugins: [
     react(),
@@ -64,7 +75,7 @@ export default defineConfig({
 });
 ```
 
-### Usage of **esm**.
+### ESM Example
 
 ```ts
 // vite.config.ts
@@ -105,7 +116,50 @@ export default defineConfig({
 });
 ```
 
-### Usage of **iife**.
+⚠ **Note**: If using Vite in development mode, configure it as follows:
+
+```ts
+export default defineConfig({
+  plugins: [
+    esCdn({
+      mode: "dev",
+      cdn: [
+        {
+          name: "vue",
+          type: "importmap",
+          url: "https://cdn.jsdelivr.net/npm/vue@3.5.13/+esm",
+        },
+      ],
+    }),
+  ],
+});
+```
+
+In development mode, Vite automatically prefixes modules marked as `external: true` with `/@id/`. Thus, distinguishing between build and dev environments is essential.
+
+Example transformation:
+
+```html
+<!-- Original -->
+<script type="importmap">
+  {
+    "imports": {
+      "vue": "https://cdn.jsdelivr.net/npm/vue@3.5.13/+esm"
+    }
+  }
+</script>
+
+<!-- Transformed in development mode -->
+<script type="importmap">
+  {
+    "imports": {
+      "/@id/vue": "https://cdn.jsdelivr.net/npm/vue@3.5.13/+esm"
+    }
+  }
+</script>
+```
+
+### IIFE Example
 
 ```ts
 // vite.config.ts
@@ -116,11 +170,13 @@ export default defineConfig({
   plugins: [
     esCdn({
       cdn: [
-      name: "vue",
-      type: "iife",
-      global: "Vue",
-      url: "https://cdn.bootcdn.net/ajax/libs/vue/3.5.13/vue.global.min.js",
-      ]
+        {
+          name: "vue",
+          type: "iife",
+          global: "Vue",
+          url: "https://cdn.bootcdn.net/ajax/libs/vue/3.5.13/vue.global.min.js",
+        },
+      ],
     }),
   ],
 });
@@ -128,11 +184,10 @@ export default defineConfig({
 
 ## Playground
 
-You can see example in playground.
+You can explore examples in the playground:
 
-```
+```sh
 pnpm run test
 
 cd playground
 pnpm run preview
-```
