@@ -65,7 +65,7 @@ export default defineConfig({
           url: "https://cdn.jsdelivr.net/npm/react@19.0.0/+esm",
         },
         {
-          name: "react-dom",
+          name: "react-dom/client",
           type: "importmap",
           url: "https://cdn.jsdelivr.net/npm/react-dom@19.0.0/client/+esm",
         },
