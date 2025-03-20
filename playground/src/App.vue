@@ -9,12 +9,21 @@
 
   <main>
     <TheWelcome />
+    <div>{{ name }}</div>
   </main>
 </template>
 
 <script setup>
 import HelloWorld from './components/HelloWorld.vue'
 import TheWelcome from './components/TheWelcome.vue'
+
+import { ref } from "vue"
+const name = ref('hello world');
+
+setTimeout(() => {
+  name.value = 'hello world 2'
+},3000)
+
 </script>
 
 <style scoped>

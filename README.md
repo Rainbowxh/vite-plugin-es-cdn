@@ -27,6 +27,7 @@ Plugin supports three types of cdn script:
 import { defineConfig } from "vite";
 import esCdn from "vite-plugin-es-cdn";
 
+// for vue
 export default defineConfig({
   plugins: [
     esCdn({
@@ -35,6 +36,27 @@ export default defineConfig({
           name: "vue",
           type: "importmap",
           url: "https://cdn.jsdelivr.net/npm/vue@3.5.13/+esm",
+        },
+      ],
+    }),
+  ],
+});
+
+// for react. https://react.dev/learn/build-a-react-app-from-scratch#vite
+export default defineConfig({
+  plugins: [
+    react(),
+    esCdn({
+      cdn: [
+        {
+          name: "react",
+          type: "importmap",
+          url: "https://cdn.jsdelivr.net/npm/react@19.0.0/+esm",
+        },
+        {
+          name: "react-dom",
+          type: "importmap",
+          url: "https://cdn.jsdelivr.net/npm/react-dom@19.0.0/client/+esm",
         },
       ],
     }),
@@ -52,11 +74,32 @@ import esCdn from "vite-plugin-es-cdn";
 export default defineConfig({
   plugins: [
     esCdn({
-      cdn: {
-        name: "vue",
-        type: "esm",
-        url: "https://cdn.jsdelivr.net/npm/vue@3.5.13/+esm",
-      },
+      cdn: [
+        {
+          name: "vue",
+          type: "esm",
+          url: "https://cdn.jsdelivr.net/npm/vue@3.5.13/+esm",
+        },
+      ],
+    }),
+  ],
+});
+
+export default defineConfig({
+  plugins: [
+    esCdn({
+      cdn: [
+        {
+          name: "react",
+          type: "esm",
+          url: "https://cdn.jsdelivr.net/npm/react@19.0.0/+esm",
+        },
+        {
+          name: "react-dom/client",
+          type: "esm",
+          url: "https://cdn.jsdelivr.net/npm/react-dom@19.0.0/client/+esm",
+        },
+      ],
     }),
   ],
 });
